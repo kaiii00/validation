@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error</title>
+    <link rel="stylesheet" th:href="@{/css/error.css}">
+</head>
+<body>
+<div class="container">
+    <h1>There's seems to ba a problem with the site</h1>
+    <p th:text="${message}">hahaha</p>
+    <a th:href="@{/}">Back to Home</a>
+</div>
+
+</body>
+</html>

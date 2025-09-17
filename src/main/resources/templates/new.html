@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Car</title>
+    <link rel="stylesheet" th:href="@{/new.css}">
+</head>
+<body>
+
+<form th:action="@{/save}" th:object="${car}" method="post">
+    <h1>Add New Car</h1>
+
+    <label for="make">Make:</label>
+    <input id="make" type="text" th:field="*{make}"/>
+    <div th:if="${#fields.hasErrors('make')}" th:errors="*{make}" class="error"></div>
+
+    <label for="year">Year:</label>
+    <input id="year" type="number" th:field="*{year}"/>
+    <div th:if="${#fields.hasErrors('year')}" th:errors="*{year}" class="error"></div>
+
+    <label for="licensePlateNumber">License Plate Number:</label>
+    <input id="licensePlateNumber" type="text" th:field="*{licensePlateNumber}"/>
+    <div th:if="${#fields.hasErrors('licensePlateNumber')}" th:errors="*{licensePlateNumber}" class="error"></div>
+
+    <label for="color">Color:</label>
+    <input id="color" type="text" th:field="*{color}"/>
+    <div th:if="${#fields.hasErrors('color')}" th:errors="*{color}" class="error"></div>
+
+    <label for="bodyType">Body Type:</label>
+    <select id="bodyType" th:field="*{bodyType}">
+        <option value="" disabled selected>-- Select Body Type --</option>
+        <option value="Sedan">Sedan</option>
+        <option value="SUV">SUV</option>
+        <option value="Hatchback">Hatchback</option>
+        <option value="Pickup">Pickup</option>
+        <option value="Coupe">Coupe</option>
+        <option value="Convertible">Convertible</option>
+    </select>
+
+    <label for="engineType">Engine Type:</label>
+    <select id="engineType" th:field="*{engineType}">
+        <option value="" disabled selected>-- Select Engine Type --</option>
+        <option th:each="t : ${types}" th:value="${t}" th:text="${t}"></option>
+    </select>
+
+    <label for="transmission">Transmission:</label>
+    <select id="transmission" th:field="*{transmission}">
+        <option value="" disabled selected>-- Select Transmission --</option>
+        <option th:each="t : ${sizes}" th:value="${t}" th:text="${t}"></option>
+    </select>
+
+    <button type="submit">Save Car</button>
+    <a href="/">Cancel</a>
+</form>
+
+</body>
+</html>
