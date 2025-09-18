@@ -2,10 +2,9 @@ package com.kai.Controller;
 
 import com.kai.DTO.CarDTO;
 import com.kai.Exception.ResourceNotFoundException;
-import com.kai.Repository.CarRepository;
 import com.kai.Model.Car;
+import com.kai.Repository.CarRepository;
 import com.kai.Service.CarService;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,117 +17,124 @@ import java.util.List;
 public class CarController {
 
     private final CarService carService;
-    CarRepository carRepository;
+    private final CarRepository carRepository;
 
     public CarController(CarRepository carRepository, CarService carService) {
         this.carRepository = carRepository;
         this.carService = carService;
     }
 
+    // -------------------- LIST / SEARCH --------------------
     @GetMapping("/")
-    public String index(@RequestParam(defaultValue = "") String search, HttpSession session, Model model) {
+    public String index(@RequestParam(defaultValue = "") String search, Model model) {
         List<Car> cars;
 
-        if (search.isEmpty()){
-            cars = carRepository.findAll();// ✅ only keep this
-        }else{
-            cars = carRepository.findByMakeContainingIgnoreCaseOrLicensePlateNumberContainingIgnoreCaseOrColorContainingIgnoreCaseOrBodyTypeContainingIgnoreCaseOrEngineTypeContainingIgnoreCaseOrTransmissionContainingIgnoreCase(search,search,search, search, search, search);
+        if (search.isEmpty()) {
+            cars = carRepository.findAll();
+        } else {
+            cars = carRepository.findByMakeContainingIgnoreCaseOrLicensePlateNumberContainingIgnoreCaseOrColorContainingIgnoreCaseOrBodyTypeContainingIgnoreCaseOrEngineTypeContainingIgnoreCaseOrTransmissionContainingIgnoreCase(
+                    search, search, search, search, search, search
+            );
         }
 
         model.addAttribute("cars", cars);
         model.addAttribute("search", search);
-        cars.forEach(car -> {
-            System.out.println(car.getMake());
-        });
         return "index";
     }
 
+    // -------------------- DELETE --------------------
     @GetMapping("/delete")
-    public String deleteCar(@RequestParam int id, HttpSession session) {
-
-        carRepository.deleteById(id);
+    public String deleteCar(@RequestParam int id) {
+        Car car = carRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Car not found with id " + id));
+        carRepository.delete(car);
         return "redirect:/";
     }
-    @GetMapping("/new")
-    public String add(Model model, HttpSession session) {
 
-        CarDTO carDTO = new CarDTO();
-        model.addAttribute("car", carDTO);
-        model.addAttribute("activeMenu", "new");
-        model.addAttribute("body", new String[]{"Sedan", "SUV", "Hatchback", "Pickup", "Coupe", "Convertible"});
-        model.addAttribute("types", new String[]{"Gasoline", "Diesel", "Electric", "Hybrid"});
-        model.addAttribute("sizes", new String[]{"Automatic", "Manual"});
+    // -------------------- ADD NEW --------------------
+    @GetMapping("/new")
+    public String add(Model model) {
+        model.addAttribute("car", new CarDTO());
+        populateFormAttributes(model);
         return "new";
     }
 
     @PostMapping("/save")
-    public String save(@ModelAttribute("car") @Valid CarDTO carDTO, BindingResult bindingResult, HttpSession session, Model model) {
-
+    public String save(@ModelAttribute("car") @Valid CarDTO carDTO,
+                       BindingResult bindingResult,
+                       Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("car", carDTO);
-            model.addAttribute("body", new String[]{"Sedan", "SUV", "Hatchback", "Pickup", "Coupe", "Convertible"});
-            model.addAttribute("types", new String[]{"Gasoline", "Diesel", "Electric", "Hybrid"});
-            model.addAttribute("sizes", new String[]{"Automatic", "Manual"});
+            populateFormAttributes(model);
             return "new";
         }
 
-        Car car = new Car();
-        car.setMake(carDTO.getMake());
-        car.setYear(carDTO.getYear());
-        car.setLicensePlateNumber(carDTO.getLicensePlateNumber());
-        car.setColor(carDTO.getColor());
-        car.setBodyType(carDTO.getBodyType());
-        car.setEngineType(carDTO.getEngineType());
-        car.setTransmission(carDTO.getTransmission());
+        Car car = mapDtoToCar(carDTO);
         carRepository.save(car);
         return "redirect:/";
     }
 
+    // -------------------- EDIT --------------------
     @GetMapping("/edit")
-    public String edit(@RequestParam int id, Model model, HttpSession session) {
+    public String edit(@RequestParam int id, Model model) {
+        Car car = carRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Car not found with id " + id));
 
-        Car c = carRepository.findById(id).orElseThrow(() -> new RuntimeException("Car not found"));
-
-        CarDTO carDTO = new CarDTO();
-        carDTO.setId(c.getId());
-        carDTO.setMake(c.getMake());
-        carDTO.setYear(c.getYear());
-        carDTO.setLicensePlateNumber(c.getLicensePlateNumber());
-        carDTO.setColor(c.getColor());
-        carDTO.setBodyType(c.getBodyType());
-        carDTO.setEngineType(c.getEngineType());
-        carDTO.setTransmission(c.getTransmission());
-
+        CarDTO carDTO = mapCarToDto(car);
         model.addAttribute("car", carDTO);
-        model.addAttribute("body", new String[]{"Sedan", "SUV", "Hatchback", "Pickup", "Coupe", "Convertible"});
-        model.addAttribute("types", new String[]{"Gasoline", "Diesel", "Electric", "Hybrid"});
-        model.addAttribute("sizes", new String[]{"Automatic", "Manual"});
+        populateFormAttributes(model);
         return "edit";
     }
 
-
     @PostMapping("/update")
-    public String update(@ModelAttribute("car") @Valid CarDTO carDTO, BindingResult bindingResult, HttpSession session, Model model) {
-
+    public String update(@ModelAttribute("car") @Valid CarDTO carDTO,
+                         BindingResult bindingResult,
+                         Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("car", carDTO);
-            model.addAttribute("body", new String[]{"Sedan", "SUV", "Hatchback", "Pickup", "Coupe", "Convertible"});
-            model.addAttribute("types", new String[]{"Gasoline", "Diesel", "Electric", "Hybrid"});
-            model.addAttribute("sizes", new String[]{"Automatic", "Manual"});
+            populateFormAttributes(model);
             return "edit";
         }
 
         Car car = carRepository.findById(carDTO.getId())
-                .orElseThrow(() -> new RuntimeException("Car not found"));
-        car.setMake(carDTO.getMake());
-        car.setYear(carDTO.getYear());
-        car.setLicensePlateNumber(carDTO.getLicensePlateNumber());
-        car.setColor(carDTO.getColor());
-        car.setBodyType(carDTO.getBodyType());
-        car.setEngineType(carDTO.getEngineType());
-        car.setTransmission(carDTO.getTransmission());
+                .orElseThrow(() -> new ResourceNotFoundException("Car not found with id " + carDTO.getId()));
 
+        car = mapDtoToCar(carDTO, car);
         carRepository.save(car);
         return "redirect:/";
+    }
+
+    // -------------------- HELPER METHODS --------------------
+    private void populateFormAttributes(Model model) {
+        model.addAttribute("body", new String[]{"Sedan", "SUV", "Hatchback", "Pickup", "Coupe", "Convertible"});
+        model.addAttribute("types", new String[]{"Gasoline", "Diesel", "Electric", "Hybrid"});
+        model.addAttribute("sizes", new String[]{"Automatic", "Manual"});
+    }
+
+    private Car mapDtoToCar(CarDTO dto) {
+        Car car = new Car();
+        return mapDtoToCar(dto, car);
+    }
+
+    private Car mapDtoToCar(CarDTO dto, Car car) {
+        car.setMake(dto.getMake());
+        car.setYear(dto.getYear());
+        car.setLicensePlateNumber(dto.getLicensePlateNumber());
+        car.setColor(dto.getColor());
+        car.setBodyType(dto.getBodyType());
+        car.setEngineType(dto.getEngineType());
+        car.setTransmission(dto.getTransmission());
+        return car;
+    }
+
+    private CarDTO mapCarToDto(Car car) {
+        CarDTO dto = new CarDTO();
+        dto.setId(car.getId());
+        dto.setMake(car.getMake());
+        dto.setYear(car.getYear());
+        dto.setLicensePlateNumber(car.getLicensePlateNumber());
+        dto.setColor(car.getColor());
+        dto.setBodyType(car.getBodyType());
+        dto.setEngineType(car.getEngineType());
+        dto.setTransmission(car.getTransmission());
+        return dto;
     }
 }
